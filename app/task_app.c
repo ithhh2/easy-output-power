@@ -1,7 +1,9 @@
 #include "task_app.h"
 
 #include "app_config.h"
+#include "app_fault.h"
 #include "app_state.h"
+#include "app_storage.h"
 #include "hw_adc_sample.h"
 #include "hw_ch224.h"
 #include "hw_con.h"
@@ -54,6 +56,17 @@ void task_emergency_shutdown(void)
 	relay_close_all();
 	app_state()->isOpen = DISABLE;
 	protect_on_output_disabled();
+}
+
+static void task_on_fault(FaultReason_t reason)
+{
+	task_emergency_shutdown();
+	app_state()->faultLatched = 1U;
+	app_state()->faultReason = reason;
+	protect_reset_filter();
+	OLED_Clear();
+	ui_mark_dirty();
+	ui_render();
 }
 
 static void clear_fault_latch(void)
@@ -113,6 +126,7 @@ void task_toggle_power_output(void)
 	{
 		task_emergency_shutdown();
 		protect_reset_filter();
+		app_storage_request_save();
 		OLED_Clear();
 		ui_mark_dirty();
 		ui_render();
@@ -124,6 +138,7 @@ void task_adjust_voltage_up(void)
 	AppState_t *state = app_state();
 
 	state->setVolIndex = power_profile_next_index(state->setVolIndex);
+	app_storage_request_save();
 	ui_mark_dirty();
 	ui_render();
 }
@@ -133,6 +148,7 @@ void task_adjust_voltage_down(void)
 	AppState_t *state = app_state();
 
 	state->setVolIndex = power_profile_prev_index(state->setVolIndex);
+	app_storage_request_save();
 	ui_mark_dirty();
 	ui_render();
 }
@@ -144,6 +160,7 @@ void task_adjust_current_up(void)
 	if (state->protectValue <= (PROTECT_CUR_MAX_MA - PROTECT_CUR_STEP_MA))
 	{
 		state->protectValue += PROTECT_CUR_STEP_MA;
+		app_storage_request_save();
 		ui_mark_dirty();
 		ui_render();
 	}
@@ -156,6 +173,7 @@ void task_adjust_current_down(void)
 	if (state->protectValue > PROTECT_CUR_MIN_MA)
 	{
 		state->protectValue -= PROTECT_CUR_STEP_MA;
+		app_storage_request_save();
 		ui_mark_dirty();
 		ui_render();
 	}
@@ -164,7 +182,9 @@ void task_adjust_current_down(void)
 void init_task(void)
 {
 	app_state_reset_defaults();
+	app_storage_load();
 	key_app_init();
+	app_fault_register(task_on_fault);
 
 	ch224k_t = ch224k_init();
 	relay_t[0] = relay_init(CON_IO3_GPIO_Port, CON_IO3_Pin, GPIO_PIN_RESET);
@@ -193,6 +213,7 @@ void task_run(void)
 		last_tick_ms = now;
 		key_app_poll();
 		protect_tick();
+		app_storage_tick();
 		IWDG_UserRefresh();
 
 		if ((now - last_display_ms) >= DISPLAY_PERIOD_MS)

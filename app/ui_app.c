@@ -1,6 +1,5 @@
 #include "ui_app.h"
 
-#include "app_config.h"
 #include "app_state.h"
 #include "mid_oled.h"
 #include "power_profile.h"
@@ -9,11 +8,19 @@
 
 static uint8_t ui_dirty = 1U;
 
+static struct
+{
+	uint16_t vol_x100;
+	uint16_t cur_ma;
+	uint8_t currentPage;
+	uint8_t isOpen;
+	uint8_t faultLatched;
+	FaultReason_t faultReason;
+} ui_cache = {0};
+
 static const PowerTier_t *ui_active_tier(void)
 {
-	AppState_t *state = app_state();
-
-	return power_profile_get(state->setVolIndex);
+	return power_profile_get(app_state()->setVolIndex);
 }
 
 static void show_vol_row(uint8_t mode, uint16_t live_vol_x100)
@@ -26,12 +33,13 @@ static void show_vol_row(uint8_t mode, uint16_t live_vol_x100)
 	{
 		OLED_ShowString(0, 1, (uint8_t *)"Now Vol:", 16, mode);
 		format_voltage(data, live_vol_x100);
-		OLED_ShowString(72, 1, (uint8_t *)data, 16, mode);
-		return;
+	}
+	else
+	{
+		OLED_ShowString(0, 1, (uint8_t *)"Set Vol:", 16, mode);
+		format_voltage(data, tier->display_x100);
 	}
 
-	OLED_ShowString(0, 1, (uint8_t *)"Set Vol:", 16, mode);
-	format_voltage(data, tier->display_x100);
 	OLED_ShowString(72, 1, (uint8_t *)data, 16, mode);
 }
 
@@ -44,12 +52,13 @@ static void show_cur_row(uint8_t mode, uint16_t live_cur_ma)
 	{
 		OLED_ShowString(0, 21, (uint8_t *)"Now Cur:", 16, mode);
 		format_current_ma(data, live_cur_ma);
-		OLED_ShowString(72, 21, (uint8_t *)data, 16, mode);
-		return;
+	}
+	else
+	{
+		OLED_ShowString(0, 21, (uint8_t *)"Set Cur:", 16, mode);
+		format_current_ma(data, state->protectValue);
 	}
 
-	OLED_ShowString(0, 21, (uint8_t *)"Set Cur:", 16, mode);
-	format_current_ma(data, state->protectValue);
 	OLED_ShowString(72, 21, (uint8_t *)data, 16, mode);
 }
 
@@ -80,6 +89,63 @@ static void show_power_line(uint8_t mode)
 	{
 		OLED_ShowString(28, 41, (uint8_t *)"Power ON ", 16, mode);
 	}
+}
+
+static void ui_update_cache(AppState_t *state, uint16_t vol_x100, uint16_t cur_ma)
+{
+	ui_cache.vol_x100 = vol_x100;
+	ui_cache.cur_ma = cur_ma;
+	ui_cache.currentPage = state->currentPage;
+	ui_cache.isOpen = state->isOpen;
+	ui_cache.faultLatched = state->faultLatched;
+	ui_cache.faultReason = state->faultReason;
+}
+
+static uint8_t ui_layout_changed(AppState_t *state)
+{
+	if (state->currentPage != ui_cache.currentPage)
+	{
+		return 1U;
+	}
+	if (state->isOpen != ui_cache.isOpen)
+	{
+		return 1U;
+	}
+	if (state->faultLatched != ui_cache.faultLatched)
+	{
+		return 1U;
+	}
+	if (state->faultReason != ui_cache.faultReason)
+	{
+		return 1U;
+	}
+
+	return 0U;
+}
+
+static void ui_render_values(uint16_t vol_x100, uint16_t cur_ma)
+{
+	char vol_data[8] = {0};
+	char cur_data[8] = {0};
+	AppState_t *state = app_state();
+	const PowerTier_t *tier = ui_active_tier();
+
+	if (state->isOpen == ENABLE)
+	{
+		format_voltage(vol_data, vol_x100);
+		format_current_ma(cur_data, cur_ma);
+	}
+	else
+	{
+		format_voltage(vol_data, tier->display_x100);
+		format_current_ma(cur_data, state->protectValue);
+	}
+
+	OLED_ShowString(72, 1, (uint8_t *)vol_data, 16, normal_display);
+	OLED_ShowString(72, 21, (uint8_t *)cur_data, 16, normal_display);
+	OLED_Refresh();
+	ui_update_cache(state, vol_x100, cur_ma);
+	ui_dirty = 0U;
 }
 
 void ui_init(void)
@@ -133,12 +199,20 @@ void ui_render(void)
 	show_cur_row(cur_mode, cur_ma);
 	show_power_line(pwr_mode);
 	OLED_Refresh();
+	ui_update_cache(state, vol_x100, cur_ma);
 	ui_dirty = 0U;
 }
 
 void ui_display_tick(void)
 {
+	uint16_t vol_x100 = 0U;
+	uint16_t cur_ma = 0U;
 	AppState_t *state = app_state();
+
+	if (ui_dirty == 0U)
+	{
+		return;
+	}
 
 	if (state->isOpen != ENABLE)
 	{
@@ -150,8 +224,14 @@ void ui_display_tick(void)
 		return;
 	}
 
-	if (ui_dirty != 0U)
+	protect_get_live(&vol_x100, &cur_ma);
+
+	if ((ui_layout_changed(state) == 0U) &&
+	    ((vol_x100 != ui_cache.vol_x100) || (cur_ma != ui_cache.cur_ma)))
 	{
-		ui_render();
+		ui_render_values(vol_x100, cur_ma);
+		return;
 	}
+
+	ui_render();
 }

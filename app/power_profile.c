@@ -2,10 +2,10 @@
 
 const PowerTier_t power_tier_table[] = {
 #if PWR_ENABLE_1V8
-	{180, VOL_5V0, RELAY_ID_1V8, 80},
+	{180, VOL_1V8, RELAY_ID_1V8, 80},
 #endif
 #if PWR_ENABLE_3V3
-	{330, VOL_5V0, RELAY_ID_3V3, 180},
+	{330, VOL_3V3, RELAY_ID_3V3, 180},
 #endif
 #if PWR_ENABLE_5V0
 	{500, VOL_5V0, RELAY_ID_VBUS, 350},

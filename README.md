@@ -1,4 +1,4 @@
-# Multi-Output DC Power Supply (v2.0)
+# Multi-Output DC Power Supply (v2.1)
 
 STM32F070F6P6 firmware for a multi-rail programmable DC power supply with CH224 PD front-end, relay switching, OLED UI, and ADC measurement.
 
@@ -39,38 +39,47 @@ STM32F070F6P6 firmware for a multi-rail programmable DC power supply with CH224 
 
 To change voltage tier or current limit: turn output OFF, use SET to select row, adjust, then turn ON again.
 
+## Persistence
+
+Voltage tier and current limit are saved to the last Flash page (`0x08007C00`) after changes (2 s debounce) or when output is turned OFF.
+
 ## Voltage Tiers
 
-| Display | Relay | UV threshold |
-|---------|-------|--------------|
-| 1.80V | 1.8V | 0.80V |
-| 3.30V | 3.3V | 1.80V |
-| 5.00V | VBUS | 3.50V |
+| Display | Relay | CH224 | UV threshold |
+|---------|-------|-------|--------------|
+| 1.80V | 1.8V | 1.8V profile (PD 5V) | 0.80V |
+| 3.30V | 3.3V | 3.3V profile (PD 5V) | 1.80V |
+| 5.00V | VBUS | 5V | 3.50V |
 
-Default tier on boot: **5.00V**. Current limit default: **500 mA** (200-1000 mA, step 100 mA).
+Default tier on boot: **5.00V** (or last saved). Current limit: **200-1000 mA**, step 100 mA.
 
 ## Fault Codes
 
 | Display | Meaning |
 |---------|---------|
-| FAULT OC | Over-current (latched, press ADD/SUB on POWER to clear) |
-| FAULT UV | Under-voltage |
+| FAULT OC | Over-current (+50 mA hysteresis, latched) |
+| FAULT UV | Under-voltage (after 1 s grace) |
 | FAULT ADC | ADC sampling failed repeatedly |
+
+OC protection is active even during the 1 s startup grace period; UV is delayed.
 
 ## Build and Flash
 
-Use **Release** build (~21 KB Flash):
+Use **Release** build (~18-20 KB Flash, 1 KB reserved for config):
 
 ```powershell
 cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/Release
 ```
 
-Flash `build/Release/mult-output-power.elf` (or `.hex`). Do not flash Debug (~27 KB) for normal use.
+Flash `build/Release/mult-output-power.elf` (or `.hex`).
 
-STM32CubeIDE: select **Release**, Clean + Build, then program.
+## CubeMX
+
+See [docs/CUBEMX.md](docs/CUBEMX.md) before regenerating code from `.ioc`.
 
 ## Version Tags
 
 - `v1.0` - Initial stable release
-- `v2.0` - DMA ADC, fixed-point measurement, modular app layer, reliability fixes
+- `v2.0` - DMA ADC, fixed-point measurement, modular app layer
+- `v2.1` - Flash persistence, async ADC, UI incremental refresh, protection/UI/hardware enhancements

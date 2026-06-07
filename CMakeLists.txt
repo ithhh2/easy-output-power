@@ -47,6 +47,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${CMAKE_CURRENT_SOURCE_DIR}/app/task_app.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/app_state.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/app_fault.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/app_storage.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/ui_app.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/protect_app.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/key_app.c
