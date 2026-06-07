@@ -1,0 +1,24 @@
+# Build outputs
+/build/
+/Debug/
+/Release/
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.su
+*.o
+*.d
+*.cyclo
+
+# IDE / editor
+/.metadata/
+/.vscode/
+/.settings/language.settings.xml
+*.launch.user
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
