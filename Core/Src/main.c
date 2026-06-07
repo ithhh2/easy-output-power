@@ -99,6 +99,7 @@ int main(void)
   while (1)
   {
 	  task_run();
+	  __WFI();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

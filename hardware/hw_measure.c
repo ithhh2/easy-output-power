@@ -2,32 +2,40 @@
 
 #include <stddef.h>
 
+#define MEASURE_VREF_NUM          1240U
+#define MEASURE_VOL_NUM           164920U
+#define MEASURE_VOL_DEN           330U
+#define MEASURE_VOL_X100_MAX      2000U
+#define MEASURE_CUR_MA_MAX        1500U
+
+static uint16_t clamp_u16(uint32_t value, uint16_t max_value)
+{
+	if (value > (uint32_t)max_value)
+	{
+		return max_value;
+	}
+
+	return (uint16_t)value;
+}
+
 uint8_t hw_measure_from_raw(uint16_t raw_cur, uint16_t raw_vol, uint16_t raw_vref,
                             uint16_t *vol_x100, uint16_t *cur_ma)
 {
-	float cur_a;
-	float vol_v;
+	uint32_t cur_value;
+	uint32_t vol_value;
+	uint32_t vol_den;
 
 	if ((raw_vref == 0U) || (vol_x100 == NULL) || (cur_ma == NULL))
 	{
 		return 0U;
 	}
 
-	cur_a = (((float)raw_cur / (float)raw_vref) * HW_MEASURE_VREF_NOMINAL_V) /
-	        HW_MEASURE_CUR_AMP_GAIN / HW_MEASURE_CUR_SHUNT_OHM;
-	vol_v = (((float)raw_vol / (float)raw_vref) * HW_MEASURE_VREF_NOMINAL_V) *
-	        HW_MEASURE_VOL_DIVIDER_NUM / HW_MEASURE_VOL_DIVIDER_DEN;
+	cur_value = ((uint32_t)raw_cur * MEASURE_VREF_NUM + (raw_vref / 2U)) / raw_vref;
+	*cur_ma = clamp_u16(cur_value, MEASURE_CUR_MA_MAX);
 
-	if (cur_a < 0.0f)
-	{
-		cur_a = 0.0f;
-	}
-	if (vol_v < 0.0f)
-	{
-		vol_v = 0.0f;
-	}
+	vol_den = (uint32_t)raw_vref * MEASURE_VOL_DEN;
+	vol_value = ((uint32_t)raw_vol * MEASURE_VOL_NUM + (vol_den / 2U)) / vol_den;
+	*vol_x100 = clamp_u16(vol_value, MEASURE_VOL_X100_MAX);
 
-	*cur_ma = (uint16_t)(cur_a * 1000.0f + 0.5f);
-	*vol_x100 = (uint16_t)(vol_v * 100.0f + 0.5f);
 	return 1U;
 }

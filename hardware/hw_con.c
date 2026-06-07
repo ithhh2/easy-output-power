@@ -14,6 +14,11 @@
  */
 void control_relayx(Relay_HandleDef *relay_t)
 {
+	if (relay_t == NULL)
+	{
+		return;
+	}
+
 	relay_close_all();
 	if(relay_t->relay_open_level == 0){
 		HAL_GPIO_WritePin(relay_t->relay_gpio,relay_t->relay_pin,GPIO_PIN_RESET);

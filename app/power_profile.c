@@ -1,5 +1,4 @@
 #include "power_profile.h"
-#include "util_format.h"
 
 const PowerTier_t power_tier_table[] = {
 #if PWR_ENABLE_1V8
@@ -69,9 +68,4 @@ uint8_t power_profile_prev_index(uint8_t index)
 	}
 
 	return index;
-}
-
-void power_profile_format_voltage(char *buf, uint16_t display_x100)
-{
-	format_voltage(buf, display_x100);
 }

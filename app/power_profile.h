@@ -34,6 +34,5 @@ uint8_t power_profile_default_index(void);
 const PowerTier_t *power_profile_get(uint8_t index);
 uint8_t power_profile_next_index(uint8_t index);
 uint8_t power_profile_prev_index(uint8_t index);
-void power_profile_format_voltage(char *buf, uint16_t display_x100);
 
 #endif
