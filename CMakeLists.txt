@@ -46,9 +46,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${CMAKE_CURRENT_SOURCE_DIR}/app/task_app.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/power_profile.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/util_format.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/iwdg_user.c
     ${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_ch224.c
     ${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_con.c
     ${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_key.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_measure.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_adc_dma.c
     ${CMAKE_CURRENT_SOURCE_DIR}/middle/mid_oled.c
 )
 

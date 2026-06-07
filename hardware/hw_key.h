@@ -3,16 +3,16 @@
 
 #include "main.h"
 
-//public macro define
+#define KEY_DEBOUNCE_TICKS     2U
+#define KEY_REPEAT_DELAY_MS    1000U
+#define KEY_REPEAT_PERIOD_MS   100U
 
-#define DOUBLE_TIME 40  	//double click time -- 40ms
-#define KEY_NoPress 0xFF	
-#define KEY_ERROR   0x00
-#define KEY_OK      0x01
+#define KEY_NoPress 0xFF
+#define KeyPress    0x10
 
-#define KeyPress 0x10
-#define KeyDoublePress 0x20 
-#define KeyLongPress  0x30
+#define KEY_PHASE_IDLE      0U
+#define KEY_PHASE_DEBOUNCE  1U
+#define KEY_PHASE_HELD      2U
 
 typedef struct
 {
@@ -20,14 +20,12 @@ typedef struct
 	uint16_t key_pin;
 	uint8_t key_state;
 	uint8_t key_press_level;
-	uint8_t keyCnt;				//key pressed time interval count
-	uint8_t keyFcnt; 			//double click time
-	uint8_t keyCount; 		   	//key pressed count
-	uint8_t keyLongFlag; 		//key long press flag
-}KEY_HandleDef;
+	uint8_t key_phase;
+	uint8_t key_cnt;
+} KEY_HandleDef;
 
 void key_scanf(KEY_HandleDef *key_handle);
-KEY_HandleDef key_init(GPIO_TypeDef *key_gpio,uint16_t key_pin,uint8_t key_press_level);
+uint8_t key_is_held(const KEY_HandleDef *key_handle);
+KEY_HandleDef key_init(GPIO_TypeDef *key_gpio, uint16_t key_pin, uint8_t key_press_level);
 
 #endif
-

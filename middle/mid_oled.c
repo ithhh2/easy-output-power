@@ -1,7 +1,4 @@
 #include "mid_oled.h"
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
 #include "mid_oledfont.h"
 #include "i2c.h"
 

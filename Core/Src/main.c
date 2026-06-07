@@ -98,8 +98,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  trigger_scanf();
-	  protectiveScan();
+	  task_run();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -173,6 +172,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  task_emergency_shutdown();
   __disable_irq();
   while (1)
   {

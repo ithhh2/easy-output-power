@@ -52,6 +52,7 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_exti.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_iwdg.c
 )
 
 # Drivers Midllewares

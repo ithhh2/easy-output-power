@@ -1,72 +1,82 @@
 #include "hw_key.h"
 
-/*
- * Function Content: key instance registration
- * Function Parameter: key gpio、pin and press_level
- * Return Value: KEY_HandleDef
- */
-KEY_HandleDef key_init(GPIO_TypeDef *key_gpio,uint16_t key_pin,uint8_t key_press_level)
+KEY_HandleDef key_init(GPIO_TypeDef *key_gpio, uint16_t key_pin, uint8_t key_press_level)
 {
-	KEY_HandleDef key_handle;
+	KEY_HandleDef key_handle = {0};
+
 	key_handle.key_gpio = key_gpio;
 	key_handle.key_pin = key_pin;
 	key_handle.key_press_level = key_press_level;
 	key_handle.key_state = KEY_NoPress;
-	key_handle.keyCnt = 0;
-	key_handle.keyCount = 0;
-	key_handle.keyFcnt = 0;
-	key_handle.keyLongFlag = 0;
+	key_handle.key_phase = KEY_PHASE_IDLE;
+	key_handle.key_cnt = 0U;
 	return key_handle;
 }
 
-/*
- * Function Content: scanf one key -- 10ms make one call
- * Function Parameter: KEY_HandleDef *key_handle
- * Return Value: No
- */
+uint8_t key_is_held(const KEY_HandleDef *key_handle)
+{
+	if (key_handle == NULL)
+	{
+		return 0U;
+	}
+
+	return (key_handle->key_phase == KEY_PHASE_HELD) ? 1U : 0U;
+}
+
 void key_scanf(KEY_HandleDef *key_handle)
 {
-	key_handle->key_state = KEY_NoPress;
-	//if key pressing
-	if(HAL_GPIO_ReadPin(key_handle->key_gpio,key_handle->key_pin) == key_handle->key_press_level)
+	uint8_t is_down = 0U;
+
+	if (key_handle == NULL)
 	{
-		key_handle->keyCnt++;			//record the time when the button is pressed
-		if(key_handle->keyCnt >= 120)
-		{
-			key_handle->keyCnt = 120;	//prevent data from exceeding the boundaries
-		}
+		return;
 	}
-	else
+
+	key_handle->key_state = KEY_NoPress;
+	is_down = (HAL_GPIO_ReadPin(key_handle->key_gpio, key_handle->key_pin) == key_handle->key_press_level) ?
+	          1U :
+	          0U;
+
+	switch (key_handle->key_phase)
 	{
-		//if the key is lifted up
-		if((key_handle->keyCnt >= 100) && (key_handle->keyLongFlag == 0)){
-			//key press time > 1s and before no keyLongFlag,set the state as KeyLongPress
-			key_handle->key_state = KeyLongPress;
-		}
-		else if(key_handle->keyCnt >= 2)
+	case KEY_PHASE_IDLE:
+		if (is_down != 0U)
 		{
-			//key press time>20ms,proof is a single press
-			key_handle->keyCount++;     			//key num increased
-			key_handle->keyFcnt = DOUBLE_TIME;   	//set double click time
-			key_handle->keyLongFlag = 1;    		//set keyLongFlag as 1
+			key_handle->key_phase = KEY_PHASE_DEBOUNCE;
+			key_handle->key_cnt = 1U;
 		}
-		key_handle->keyCnt = 0;
-		if(key_handle->keyFcnt)
+		break;
+
+	case KEY_PHASE_DEBOUNCE:
+		if (is_down != 0U)
 		{
-			key_handle->keyFcnt--;  //reduce double click time
-			if(key_handle->keyFcnt <= 0)    
+			if (key_handle->key_cnt < 255U)
 			{
-				//double click time is end
-				if(key_handle->keyCount == 1){
-					key_handle->key_state = KeyPress;	//click
-				}
-				else if(key_handle->keyCount == 2){
-					key_handle->key_state = KeyDoublePress;	//double click
-				}
-				key_handle->keyFcnt = 0;
-				key_handle->keyCount = 0;
-				key_handle->keyLongFlag = 0;
+				key_handle->key_cnt++;
+			}
+
+			if (key_handle->key_cnt >= KEY_DEBOUNCE_TICKS)
+			{
+				key_handle->key_phase = KEY_PHASE_HELD;
+				key_handle->key_state = KeyPress;
 			}
 		}
+		else
+		{
+			key_handle->key_phase = KEY_PHASE_IDLE;
+			key_handle->key_cnt = 0U;
+		}
+		break;
+
+	case KEY_PHASE_HELD:
+	default:
+		if (is_down != 0U)
+		{
+			break;
+		}
+
+		key_handle->key_phase = KEY_PHASE_IDLE;
+		key_handle->key_cnt = 0U;
+		break;
 	}
 }

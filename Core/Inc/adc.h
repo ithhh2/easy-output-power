@@ -33,6 +33,7 @@ extern "C" {
 /* USER CODE END Includes */
 
 extern ADC_HandleTypeDef hadc;
+extern DMA_HandleTypeDef hdma_adc;
 
 /* USER CODE BEGIN Private defines */
 
